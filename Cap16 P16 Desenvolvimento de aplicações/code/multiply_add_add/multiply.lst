@@ -1,0 +1,122 @@
+P16 assembler v1.2 (Apr  8 2019)	multiply.lst	Sun Apr 14 09:28:15 2019
+
+Sections
+Index   Name            Addresses       Size
+0       .startup        0000 - 0013     0014 20
+1       .stack          0014 - 0413     0400 1024
+2       .data           0414 - 0419     0006 6
+3       .text           041A - 044D     0034 52
+
+Symbols
+Name                    Type      Value      Section
+while                   LABEL     0444 1092  .text
+addr_n                  LABEL     0438 1080  .text
+multiply                LABEL     043E 1086  .text
+addr_m                  LABEL     0436 1078  .text
+q                       LABEL     0418 1048  .data
+p                       LABEL     0416 1046  .data
+addr_main               LABEL     0012 18    .startup
+line#3                  LABEL     0002 2     .startup
+stack                   LABEL     0014 20    .stack
+addr_q                  LABEL     043C 1084  .text
+_start                  LABEL     0004 4     .startup
+stack_top               LABEL     0414 1044  .stack
+addr_stack_top          LABEL     0010 16    .startup
+line#10                 LABEL     000E 14    .startup
+main                    LABEL     041A 1050  .text
+while_end               LABEL     044A 1098  .text
+addr_p                  LABEL     043A 1082  .text
+m                       LABEL     0414 1044  .data
+n                       LABEL     0415 1045  .data
+
+Code listing
+   1              		.section .startup
+   2 0000 0158    		b	_start
+   3 0002 FF5B    		b	.
+   4              	_start:
+   5 0004 5D0C    		ldr	sp, addr_stack_top
+   6 0006 500C    		ldr	r0, addr_main
+   7 0008 81B7    		mov	r1, pc
+   8 000A 1EA2    		add	lr, r1, 4
+   9 000C 0FB0    		mov	pc, r0
+  10 000E FF5B    		b	.
+  11              	
+  12              	addr_stack_top:
+  13 0010 1404    		.word	stack_top
+  14              	addr_main:
+  15 0012 1A04    		.word	main
+  16              	
+  17              		.section .stack
+  18              	stack:
+  19 0014 00000000		.space	1024
+  19 0018 00000000
+  19 001C 00000000
+  19 0020 00000000
+  20              	stack_top:
+  21              	
+  22              	/*---------------------------------------------------
+  23              	uint8_t m = 20, n = 3;
+  24              	uint16_t p, q;
+  25              	*/
+  26              		.data
+  27              	m:
+  28 0414 14      		.byte	20
+  29              	n:
+  30 0415 03      		.byte	3
+  31              	p:
+  32 0416 0000    		.word	0
+  33              	q:
+  34 0418 0000    		.word	0
+  35              	/*---------------------------------------------------
+  36              	int main() {
+  37              		p = multiply(m, n);
+  38              		q = multiply(4, 7);
+  39              	}
+  40              	*/
+  41              		.text
+  42              	main:
+  43 041A 0E24    		push	lr
+  44 041C C00C    		ldr	r0, addr_m
+  45 041E 0008    		ldrb	r0, [r0]
+  46 0420 B10C    		ldr	r1, addr_n
+  47 0422 1108    		ldrb	r1, [r1]
+  48 0424 0C5C    		bl	multiply
+  49 0426 910C    		ldr	r1, addr_p
+  50 0428 1020    		str	r0, [r1]
+  51 042A 4060    		mov	r0, 4
+  52 042C 7160    		mov	r1, 7
+  53 042E 075C    		bl	multiply
+  54 0430 510C    		ldr	r1, addr_q
+  55 0432 1020    		str	r0, [r1]
+  56 0434 0F04    		pop	pc
+  57              	
+  58              	addr_m:
+  59 0436 1404    		.word	m
+  60              	addr_n:
+  61 0438 1504    		.word	n
+  62              	addr_p:
+  63 043A 1604    		.word	p
+  64              	addr_q:
+  65 043C 1804    		.word	q
+  66              	
+  67              	/*---------------------------------------------------
+  68              	int multiply(<r0> int multiplicand, <r1> int multiplier) {
+  69              		<r2> int product = 0;
+  70              		while (multiplier > 0) {
+  71              			product += multiplicand;
+  72              			multiplier--;
+  73              		}
+  74              		<r0> return product;
+  75              	}
+  76              	*/
+  77              	multiply:
+  78 043E 0260    		mov	r2, 0
+  79 0440 11A0    		add	r1, r1, 0
+  80 0442 0340    		bzs	while_end
+  81              	while:
+  82 0444 A280    		add	r2, r2, r1
+  83 0446 91A8    		sub	r1, r1, 1
+  84 0448 FD47    		bzc	while
+  85              	while_end:
+  86 044A 00B1    		mov	r0, r2
+  87 044C 0FB7    		mov	pc, lr

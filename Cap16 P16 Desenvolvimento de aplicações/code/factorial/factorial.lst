@@ -1,0 +1,147 @@
+P16 assembler v1.2 (Apr  8 2019)	factorial.lst	Mon Apr  8 11:57:41 2019
+
+Sections
+Index   Name            Addresses       Size
+0       .startup        0000 - 000B     000C 12
+1       .stack          000C - 004B     0040 64
+2       .data           004C - 0051     0006 6
+3       .text           0052 - 00AB     005A 90
+
+Symbols
+Name                    Type      Value      Section
+mul16_if_end            LABEL     009E 158   .text
+mul16_return            LABEL     00A4 164   .text
+addr_fa                 LABEL     006A 106   .text
+factorial               LABEL     006E 110   .text
+mul16_while             LABEL     0092 146   .text
+addr_a                  LABEL     0068 104   .text
+factorial_2             LABEL     0084 132   .text
+mul16                   LABEL     008A 138   .text
+line#7                  LABEL     0008 8     .startup
+a                       LABEL     004C 76    .data
+main                    LABEL     0052 82    .text
+addr_stack_top          LABEL     000A 10    .startup
+factorial_1             LABEL     0086 134   .text
+line#3                  LABEL     0002 2     .startup
+_start                  LABEL     0004 4     .startup
+fa                      LABEL     004E 78    .data
+addr_fb                 LABEL     006C 108   .text
+stack_top               LABEL     004C 76    .stack
+STACK_SIZE              ABSOLUTE  0040 64    .stack
+line#70                 LABEL     0082 130   .text
+fb                      LABEL     0050 80    .data
+
+Code listing
+   1              		.section .startup
+   2 0000 0158    		b	_start
+   3 0002 FF5B    		b	.
+   4              	_start:
+   5 0004 2D0C    		ldr	sp, addr_stack_top
+   6 0006 255C    		bl	main
+   7 0008 FF5B    		b	.
+   8              	addr_stack_top:
+   9 000A 4C00    		.word	stack_top
+  10              	
+  11              		.section .stack
+  12              		.equ	STACK_SIZE, 64
+  13 000C 00000000		.space	STACK_SIZE
+  13 0010 00000000
+  13 0014 00000000
+  13 0018 00000000
+  14              	stack_top:
+  15              	/*-------------------------------------------------------------
+  16              	uint16_t a = 8, fa;
+  17              	uint16_t fb;
+  18              	
+  19              	int main() {
+  20              	    fa = factorial(a);
+  21              	    fb = factorial(8);
+  22              	}
+  23              	*/
+  24              		.data
+  25              	a:
+  26 004C 0800    		.word	8
+  27              	fa:
+  28 004E 0000    		.word	0
+  29              	fb:
+  30 0050 0000    		.word	0
+  31              	
+  32              		.text
+  33              	main:
+  34 0052 0E24    		push	lr
+  35 0054 900C    		ldr	r0, addr_a
+  36 0056 0000    		ldr	r0, [r0]
+  37 0058 0A5C    		bl	factorial
+  38 005A 710C    		ldr	r1, addr_fa
+  39 005C 1020    		str	r0, [r1]
+  40 005E 8060    		mov	r0, 8
+  41 0060 065C    		bl	factorial
+  42 0062 410C    		ldr	r1, addr_fb
+  43 0064 1020    		str	r0, [r1]
+  44 0066 0F04    		pop	pc
+  45              	addr_a:
+  46 0068 4C00    		.word	a
+  47              	addr_fa:
+  48 006A 4E00    		.word	fa
+  49              	addr_fb:
+  50 006C 4E00    		.word	fa
+  51              	/*------------------------------------------------------------
+  52              	uint16_t factorial(uint16_t n) {
+  53              		if (n == 0)
+  54              			return 1;
+  55              		else
+  56              			return(n * factorial(n - 1));
+  57              	}
+  58              	*/
+  59              	factorial:
+  60 006E 00A0    		add	r0, r0, 0	; if (n == 0)
+  61 0070 0A40    		beq	factorial_1
+  62 0072 0E24    		push	lr		; save return address
+  63 0074 0024    		push	r0		; save n in stack
+  64 0076 80A8    		sub	r0, r0, 1	; factorial(n - 1)
+  65 0078 FA5F    		bl	factorial
+  66 007A 0104    		pop	r1		; recover n
+  67 007C 065C    		bl	mul16		; n * factorial(n - 1)
+  68 007E 11A0    		add	r1, r1, 0	; multiplication overflow ?
+  69 0080 0140    		beq	factorial_2
+  70 0082 FF5B    		b	.
+  71              	factorial_2:
+  72 0084 0F04    		pop	pc		; restore return address and return
+  73              	factorial_1:
+  74 0086 1060    		mov	r0, 1
+  75 0088 0FB7    		mov	pc, lr
+  76              	
+  77              	/*-------------------------------------------------------------
+  78              	uint32_t mul16(<r0> uint16_t multiplicand, <r1> uint16_t multiplier)) {
+  79              		<r2:r0> uint32_t multiplicandi = (uint32_t) multiplicand;
+  80              		<r4:r3> uint32_t product = 0;
+  81              		while ( multiplier > 0 ) {
+  82              			if ( (multiplier & 1) != 0 )
+  83              				product += multiplicandi;
+  84              			multiplier >>= 1;
+  85              			multiplicandi <<= 1;
+  86              		}
+  87              		<r1:r0> return product;
+  88              	}
+  89              	*/
+  90              	mul16:
+  91 008A 0424    		push	r4
+  92 008C 0260    		mov	r2, 0	; <r2:r0> uint32_t multiplicandi = (uint32_t) multiplicand;
+  93 008E 0360    		mov	r3, 0	; <r4:r3> uint32_t product = 0;
+  94 0090 0460    		mov	r4, 0
+  95              	mul16_while:
+  96 0092 11A0    		add	r1, r1, 0	; while ( multiplier > 0 )
+  97 0094 0740    		beq	mul16_return
+  98 0096 91E8    		lsr	r1, r1, 1	; if ( (multiplier & 1) != 0 )
+  99 0098 024C    		bcc	mul16_if_end
+ 100 009A 3380    		add	r3, r3, r0	; product += multiplicandi;
+ 101 009C 4491    		adc	r4, r4, r2
+ 102              	mul16_if_end:
+ 103 009E 80E0    		lsl	r0, r0, 1	; multiplicandi <<= 1;
+ 104 00A0 2291    		adc	r2, r2, r2
+ 105 00A2 F75B    		b	mul16_while
+ 106              	mul16_return:
+ 107 00A4 80B1    		mov	r0, r3		; <r1:r0> return product;
+ 108 00A6 01B2    		mov	r1, r4
+ 109 00A8 0404    		pop	r4
+ 110 00AA 0FB7    		mov	pc, lr	

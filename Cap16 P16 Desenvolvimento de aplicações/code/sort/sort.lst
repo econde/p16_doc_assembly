@@ -1,0 +1,132 @@
+P16 assembler v1.1 (Mar 22 2019)	sort.lst	Fri Mar 22 16:40:31 2019
+
+Sections
+Index   Name            Addresses       Size
+0       .startup        0000 - 0013     0014 20
+1       .stack          0014 - 0413     0400 1024
+2       .data           0414 - 0423     0010 16
+3       .text           0424 - 0465     0042 66
+
+Symbols
+Name                    Type      Value      Section
+sort_if_end             LABEL     0450 1104  .text
+sort_for_end            LABEL     0456 1110  .text
+false                   ABSOLUTE  0000 0     .startup
+stack_top               LABEL     0414 1044  .stack
+main                    LABEL     0424 1060  .text
+line#10                 LABEL     000e 14    .startup
+line#3                  LABEL     0002 2     .startup
+STACK_SIZE              ABSOLUTE  0400 1024  .startup
+array_end               LABEL     0424 1060  .data
+_start                  LABEL     0004 4     .startup
+addr_array              LABEL     042e 1070  .text
+sort                    LABEL     0430 1072  .text
+true                    ABSOLUTE  0001 1     .startup
+addr_main               LABEL     0012 18    .startup
+addr_stack_top          LABEL     0010 16    .startup
+sort_do                 LABEL     0438 1080  .text
+array                   LABEL     0414 1044  .data
+sort_for                LABEL     043e 1086  .text
+
+Code listing
+   1              	.section .startup
+   2 0000 0158    		b	_start	
+   3 0002 ff5b    		b	.
+   4              	_start:
+   5 0004 5d0c    		ldr	sp, addr_stack_top
+   6 0006 500c    		ldr	r0, addr_main
+   7 0008 81b7    		mov	r1, pc
+   8 000a 1ea2    		add	lr, r1, 4
+   9 000c 0fb0    		mov	pc, r0
+  10 000e ff5b    		b	.
+  11              	addr_stack_top:
+  12 0010 1404    		.word	stack_top
+  13              	addr_main:
+  14 0012 2404    		.word	main
+  15              	
+  16              		.section .stack
+  17              		.equ	STACK_SIZE, 1024
+  18 0014 00000000		.space	STACK_SIZE
+  18 0018 00000000
+  18 001c 00000000
+  18 0020 00000000
+  19              	stack_top:
+  20              	
+  21              	/*-----------------------------------------------------------------------
+  22              	uint16_t array[] = { 20, 3, 45, 7, 5, 9, 15, 2};
+  23              	
+  24              	int main() {
+  25              		sort(array, sizeof(array) / sizeof(array[0]));
+  26              	}
+  27              	*/
+  28              		.data
+  29              	array:	
+  30 0414 14000300		.word	20, 3, 45, 7, 5, 9, 15, 2
+  30 0418 2d000700
+  30 041c 05000900
+  30 0420 0f000200
+  31              	array_end:
+  32              	
+  33              		.text
+  34              	main:
+  35 0424 0e24    		push	lr
+  36 0426 300c    		ldr	r0, addr_array
+  37 0428 8160    		mov	r1, (array_end - array) / 2
+  38 042a 025c    		bl	sort
+  39 042c 0f04    		pop	pc
+  40              		
+  41              	addr_array:
+  42 042e 1404    		.word	array
+  43              	
+  44              	/*-----------------------------------------------------------------------
+  45              	typedef enum boolean {false = 0, true = !false} Boolean;
+  46              	void sort(<r0> uint16_t a[], <r1> int dim) {
+  47              		<r2> Boolean swapped;
+  48              		do {
+  49              			swapped = false;
+  50              			for (<r3> int i = 0; i < dim - 1; i++)
+  51              				if ( a[i] > a[i + 1]) {
+  52              					int aux = a[i];
+  53              					a[i] = a[i + 1];
+  54              					a[i + 1] = aux;
+  55              					swapped = true;
+  56              				};
+  57              			dim--;
+  58              		} while (swapped);
+  59              	}
+  60              	*/
+  61              	
+  62              		.equ	false, 0
+  63              		.equ	true, !false
+  64              	sort:
+  65 0430 0424    		push	r4
+  66 0432 0524    		push	r5
+  67 0434 0624    		push	r6
+  68 0436 91a8    		sub	r1, r1, 1	; dim - 1
+  69              	sort_do:
+  70 0438 0260    		mov	r2, false	; do {
+  71 043a 0360    		mov	r3, 0		; i = 0
+  72 043c 04b0    		mov	r4, r0		; r4 = endereço de a[0]
+  73              	sort_for:
+  74 043e b0b8    		cmp	r3, r1		; i – (dim - 1)
+  75 0440 0a4c    		bhs	sort_for_end	; if (i < dim-1) 
+  76 0442 4500    		ldr	r5, [r4]	; r0 = a[i]
+  77 0444 c600    		ldr	r6, [r4, 2]	; r4 = a[i + 1]
+  78 0446 e0ba    		cmp	r6, r5		; a[i + 1] - a[i]
+  79 0448 0350    		bge	sort_if_end	; if (a[i] < a[i + 1])
+  80 044a 4620    		str	r6, [r4]	; troca a[i] com a[i + 1]
+  81 044c c520    		str	r5, [r4, 2]	
+  82 044e 1260    		mov	r2, true	; swap = true
+  83              	sort_if_end:
+  84 0450 b3a0    		add	r3, r3, 1	; i++
+  85 0452 44a1    		add	r4, r4, 2	; r6 = endereço de a[i]
+  86 0454 f45b    		b	sort_for
+  87              	sort_for_end:
+  88 0456 91a8    		sub	r1, r1, 1	; dim--
+  89 0458 1460    		mov	r4, true
+  90 045a 20ba    		cmp	r2, r4
+  91 045c ed43    		beq	sort_do		; } while (swapped)
+  92 045e 0604    		pop	r6
+  93 0460 0504    		pop	r5
+  94 0462 0404    		pop	r4
+  95 0464 0fb7    		mov	pc, lr		; return

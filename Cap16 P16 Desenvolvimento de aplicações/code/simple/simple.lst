@@ -1,0 +1,80 @@
+PDS16 assembler v0.0(Jan 29 2019)	simple.lst	Tue Jan 29 15:28:37 2019
+
+
+Sections
+Index   Name            Addresses       Size
+0       .startup        0000 - 0009     000a 10
+1       .stack          000a - 0049     0040 64
+2       .data           0300 - 0305     0006 6
+3       .text           0400 - 0415     0016 22
+
+Symbols
+Name                    Type      Value      Section
+addr_z                  LABEL     0414 1044  .text
+addr_x                  LABEL     0410 1040  .text
+z                       LABEL     0304 772   .data
+main                    LABEL     0400 1024  .text
+addr_stack_top          LABEL     0008 8     .startup
+line#8                  LABEL     0006 6     .startup
+_start                  LABEL     0002 2     .startup
+addr_y                  LABEL     0412 1042  .text
+stack_top               LABEL     004a 74    .stack
+x                       LABEL     0300 768   .data
+y                       LABEL     0302 770   .data
+STACK_SIZE              ABSOLUTE  0040 64    .startup
+stack                   LABEL     000a 10    .stack
+
+Code listing
+   1              		.section .startup
+   2              	
+   3 0000 0058    		b	_start
+   4              	
+   5              	_start:
+   6 0002 2d0c    		ldr	sp, addr_stack_top
+   7 0004 fd5d    		bl	main
+   8 0006 ff5b    		b	.
+   9              	
+  10              	addr_stack_top:
+  11 0008 4a00    		.word	stack_top
+  12              	
+  13              		.section .stack
+  14              		.equ	STACK_SIZE, 64
+  15              	stack:
+  16 000a 00000000		.space	STACK_SIZE
+  16 000e 00000000
+  16 0012 00000000
+  16 0016 00000000
+  17              	stack_top:
+  18              	
+  19              	/*-----------------------------------------------------
+  20              	int x = 30, y = 4, z;
+  21              	
+  22              	int main() {
+  23              		z = x + y;
+  24              	}
+  25              	*/
+  26              		.data
+  27              	x:
+  28 0300 1e00    		.word	30
+  29              	y:
+  30 0302 0400    		.word	4
+  31              	z:
+  32 0304 0000    		.word	0
+  33              		
+  34              		.text
+  35              	main:
+  36 0400 700c    		ldr	r0, addr_x
+  37 0402 0008    		ldrb	r0, [r0]
+  38 0404 610c    		ldr	r1, addr_y
+  39 0406 1100    		ldr	r1, [r1]
+  40 0408 8080    		add	r0, r0, r1
+  41 040a 410c    		ldr	r1, addr_z	
+  42 040c 1020    		str	r0, [r1]
+  43 040e 0fb7    		mov	pc, lr
+  44              	
+  45              	addr_x:
+  46 0410 0003    		.word	x
+  47              	addr_y:
+  48 0412 0203    		.word	y
+  49              	addr_z:
+  50 0414 0403    		.word	z

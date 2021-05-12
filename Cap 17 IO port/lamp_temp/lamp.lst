@@ -1,0 +1,134 @@
+P16 assembler v1.2.2 (May 24 2019)	lamp.lst	Tue May 28 14:35:03 2019
+
+Sections
+Index   Name            Addresses       Size
+0       .startup        0000 - 000B     000C 12
+1       .text           000C - 0057     004C 76
+2       .stack          0058 - 0457     0400 1024
+
+Symbols
+Name                    Type      Value      Section
+STACK_SIZE              ABSOLUTE  0400 1024  .stack
+addr_port               LABEL     0056 86    .text
+line#7                  LABEL     0008 8     .startup
+addr_stack_top          LABEL     000A 10    .startup
+port_output             LABEL     0050 80    .text
+main                    LABEL     000C 12    .text
+stack_top               LABEL     0458 1112  .stack
+BUTTON_MASK             ABSOLUTE  0001 1     .startup
+LAMP_MASK               ABSOLUTE  0001 1     .startup
+TIME_DELAY              ABSOLUTE  2710 10000 .startup
+while4                  LABEL     0038 56    .text
+_start                  LABEL     0004 4     .startup
+while                   LABEL     000C 12    .text
+while1                  LABEL     0010 16    .text
+while4_end              LABEL     0048 72    .text
+while3_end              LABEL     0038 56    .text
+port_input              LABEL     004A 74    .text
+SDP16_PORT_ADDRESS      ABSOLUTE  FF00 65280 .startup
+line#3                  LABEL     0002 2     .startup
+while2                  LABEL     0018 24    .text
+while3                  LABEL     0028 40    .text
+
+Code listing
+   1              	.section .startup
+   2 0000 0158    		b	_start
+   3 0002 FF5B    		b	.
+   4              	_start:
+   5 0004 2D0C    		ldr	sp, addr_stack_top
+   6 0006 025C    		bl	main
+   7 0008 FF5B    		b	.
+   8              	
+   9              	addr_stack_top:
+  10 000A 5804    		.word	stack_top
+  11              	
+  12              	/*------------------------------------------------------------------------------
+  13              	*/
+  14              		.equ	BUTTON_MASK, 1
+  15              		.equ	LAMP_MASK, 1
+  16              		.equ	TIME_DELAY, 10000
+  17              	
+  18              		.equ	SDP16_PORT_ADDRESS, 0xff00
+  19              	/*
+  20              	int main() {
+  21              		while (true) {
+  22              			port_output(0)	 apaga a lâmpada
+  23              			while ((port_input() & BUTTON_MASK) != 0)
+  24              				;
+  25              			while ((port_input() & BUTTON_MASK) == 0)
+  26              				;
+  27              			port_output(LAMP_MASK);	acende a lâmpada
+  28              			uint16_t delay_counter = TIME_DELAY;
+  29              			while ((port_input() & BUTTON_MASK) != 0 && delay_counter > 0)
+  30              				delay_counter--;
+  31              			while ((port_input() & BUTTON_MASK) == 0 && delay_counter > 0)
+  32              				delay_counter--;
+  33              		}
+  34              	}
+  35              	*/
+  36              		.text
+  37              	main:
+  38              	while:
+  39 000C 0060    		mov	r0, #0
+  40 000E 205C    		bl	port_output	; port_output(0)	apaga a lâmpada
+  41              	while1:				; while ((port_input() & BUTTON_MASK) != 0)
+  42 0010 1C5C    		bl	port_input
+  43 0012 1260    		mov	r2, #BUTTON_MASK
+  44 0014 00C1    		and	r0, r0, r2
+  45 0016 FC47    		bzc	while1
+  46              	while2:				; while ((port_input() & BUTTON_MASK) == 0)
+  47 0018 185C    		bl	port_input
+  48 001A 1260    		mov	r2, #BUTTON_MASK
+  49 001C 00C1    		and	r0, r0, r2
+  50 001E FC43    		bzs	while2
+  51 0020 1060    		mov	r0, #LAMP_MASK
+  52 0022 165C    		bl	port_output		; port_output(LAMP_MASK); acende a lâmpada
+  53 0024 0461    		mov	r4, #TIME_DELAY & 0xff	; delay_counter = TIME_DELAY;
+  54 0026 7472    		movt	r4, #TIME_DELAY >> 8
+  55              	while3:
+  56 0028 105C    		bl	port_input	; while ((port_input() & BUTTON_MASK) != 0
+  57 002A 1260    		mov	r2, #BUTTON_MASK
+  58 002C 00C1    		and	r0, r0, r2
+  59 002E 0440    		bzs	while3_end
+  60 0030 44A8    		sub	r4, r4, #0	; && delay_counter > 0
+  61 0032 0240    		bzs	while3_end
+  62 0034 C4A8    		sub	r4, r4, #1
+  63 0036 F85B    		b	while3
+  64              	while3_end:
+  65              	while4:
+  66 0038 085C    		bl	port_input	; while ((port_input() & BUTTON_MASK) == 0
+  67 003A 1260    		mov	r2, #BUTTON_MASK
+  68 003C 00C1    		and	r0, r0, r2
+  69 003E 0444    		bzc	while4_end
+  70 0040 43A8    		sub	r3, r4, #0	; && delay_counter > 0
+  71 0042 0240    		bzs	while4_end
+  72 0044 C4A8    		sub	r4, r4, #1
+  73 0046 F85B    		b	while4
+  74              	while4_end:
+  75 0048 E15B    		b	while
+  76              	
+  77              	/*------------------------------------------------------------------------------
+  78              	*/
+  79              	
+  80              	port_input:
+  81 004A 510C    		ldr	r1, addr_port
+  82 004C 1008    		ldrb	r0, [r1]
+  83 004E 0FB7    		mov	pc, lr
+  84              	
+  85              	port_output:
+  86 0050 210C    		ldr	r1, addr_port
+  87 0052 1028    		strb	r0, [r1]
+  88 0054 0FB7    		mov	pc, lr
+  89              	
+  90              	addr_port:
+  91 0056 00FF    		.word	SDP16_PORT_ADDRESS
+  92              	
+  93              	/*------------------------------------------------------------------------------
+  94              	*/
+  95              		.section .stack
+  96              		.equ	STACK_SIZE, 1024
+  97 0058 00000000		.space	STACK_SIZE
+  97 005C 00000000
+  97 0060 00000000
+  97 0064 00000000
+  98              	stack_top:
