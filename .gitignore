@@ -2,4 +2,4 @@
 *.hex
 *.sim
 *.autosave
-*.pdf
+*.o
